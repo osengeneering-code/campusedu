@@ -1,0 +1,170 @@
+@extends('layouts.admin')
+
+@section('titre', 'Gestion des Semestres')
+
+@section('content')
+<div class="container-fluid">
+
+    {{-- TITRE DE PAGE --}}
+    <div class="mb-4">
+        <h1 class="fw-bold">Gestion des Semestres</h1>
+        <p class="text-muted">Visualisation hiérarchique des départements, filières, parcours et semestres.</p>
+
+        {{-- BREADCRUMB --}}
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Tableau de bord</a></li>
+                <li class="breadcrumb-item">Académique</li>
+                <li class="breadcrumb-item active">Semestres</li>
+            </ol>
+        </nav>
+    </div>
+
+    {{-- BOUTONS --}}
+    <div class="mb-3 d-flex gap-2">
+        <a href="{{ route('academique.semestres.create') }}" class="btn btn-primary">
+            <i class="bx bx-plus me-1"></i> Ajouter un semestre
+        </a>
+
+        <a href="" class="btn btn-danger">
+            <i class="bx bxs-file-pdf me-1"></i> Télécharger PDF
+        </a>
+
+        <button onclick="window.print();" class="btn btn-secondary">
+            <i class="bx bx-printer me-1"></i> Imprimer
+        </button>
+    </div>
+
+    {{-- BOUCLE DES DÉPARTEMENTS --}}
+    @forelse ($departements as $departement)
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bx bxs-school me-2"></i>
+                Département : <strong>{{ $departement->nom }}</strong>
+            </h5>
+        </div>
+
+        <div class="card-body">
+
+            {{-- TABLE FILIERES --}}
+            <h6 class="fw-bold mb-3">
+                <i class="bx bx-layer me-1"></i> Filières du département
+            </h6>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Filière</th>
+                            <th>Parcours et Semestres</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($departement->filieres as $filiere)
+                        <tr>
+                            <td>
+                                <span class="badge bg-info text-dark px-3 py-2">
+                                    {{ $filiere->nom }}
+                                </span>
+                            </td>
+
+                            <td>
+
+                                {{-- TABLE PARCOURS --}}
+                                <table class="table table-sm table-hover bg-white mb-2">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Parcours</th>
+                                            <th>Semestres</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @forelse ($filiere->parcours as $parcour)
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-warning text-dark px-3 py-2">
+                                                    {{ $parcour->nom }}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                {{-- TABLE SEMESTRES --}}
+                                                <table class="table table-sm mb-0">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>Libellé</th>
+                                                            <th>Niveau</th>
+                                                            <th class="text-center">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @forelse ($parcour->semestres as $semestre)
+                                                        <tr>
+                                                            <td>{{ $semestre->libelle }}</td>
+                                                            <td>{{ $semestre->niveau }}</td>
+                                                            <td class="text-center">
+                                                                <div class="dropdown">
+                                                                    <button class="btn p-0 dropdown-toggle" data-bs-toggle="dropdown">
+                                                                        <i class="bx bx-dots-vertical-rounded"></i>
+                                                                    </button>
+                                                                    <div class="dropdown-menu">
+
+                                                                        <a class="dropdown-item"
+                                                                           href="{{ route('academique.semestres.edit', $semestre) }}">
+                                                                            <i class="bx bx-edit-alt me-1"></i> Modifier
+                                                                        </a>
+
+                                                                        <form action="{{ route('academique.semestres.destroy', $semestre) }}"
+                                                                            method="POST"
+                                                                            onsubmit="return confirm('Supprimer ce semestre ?');">
+                                                                            @csrf
+                                                                            @method('DELETE')
+                                                                            <button type="submit" class="dropdown-item">
+                                                                                <i class="bx bx-trash me-1"></i> Supprimer
+                                                                            </button>
+                                                                        </form>
+
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        @empty
+                                                        <tr>
+                                                            <td colspan="3" class="text-center text-muted">Aucun semestre</td>
+                                                        </tr>
+                                                        @endforelse
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="2" class="text-center text-muted">Aucun parcours</td>
+                                        </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">Aucune filière</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+    @empty
+    <div class="alert alert-info">
+        <i class="bx bx-info-circle me-1"></i> Aucun département trouvé.
+    </div>
+    @endforelse
+
+</div>
+@endsection

@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Setting extends Model
+{
+    use HasFactory;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'entreprise_id',
+        'tva',
+        'caution_standard',
+        'tarif_km_supplementaire',
+        'email_notification',
+        'logo_facture',
+        'devise',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'tva' => 'decimal:2',
+        'caution_standard' => 'decimal:2',
+        'tarif_km_supplementaire' => 'decimal:2',
+    ];
+
+    public function entreprise()
+    {
+        return $this->belongsTo(Entreprise::class);
+    }
+}
