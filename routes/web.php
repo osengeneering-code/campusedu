@@ -63,34 +63,7 @@ Route::middleware([
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
     Route::post('conversations/{conversation}/messages', [MessageController::class, 'store'])->name('messages.store');
 
-    Route::get('/dashboard', function () {
-        $user = Auth::user();
-
-        if (!session()->has('status')) {
-            session()->flash('status', 'Bienvenue sur  ' . $user->nom . ' 👋');
-        }
-
-        $portailController = new PortailController(); // Instantiate controller
-        if ($user->hasRole('etudiant')) {
-            return $portailController->etudiantDashboard($user);
-        } elseif ($user->hasRole('enseignant')) {
-            return $portailController->enseignantDashboard($user);
-        } elseif ($user->hasRole('secretaire')) {
-            return $portailController->secretaireDashboard($user);
-        } elseif ($user->hasRole('responsable-stage')) {
-            return $portailController->responsableStageDashboard($user);
-        } elseif ($user->hasRole('responsable-etude')) {
-            return $portailController->responsableEtudeDashboard($user);
-        } elseif ($user->hasRole('comptable')) {
-            return $portailController->comptableDashboard($user);
-        } elseif ($user->hasRole('directeur-general')) {
-            return $portailController->directeurGeneralDashboard($user);
-        } elseif ($user->hasRole('admin')) {
-            return $portailController->adminDashboard($user);
-        } else {
-            return view('dashboards.admin');
-        }
-    })->name('dashboard');
+    Route::get('/dashboard', [App\Http\Controllers\PortailController::class, 'index'])->name('dashboard');
 
     // Route des portails
     Route::get('/portail', [App\Http\Controllers\PortailController::class, 'index'])->name('portail.index');

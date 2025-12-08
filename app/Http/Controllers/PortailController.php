@@ -66,7 +66,7 @@ class PortailController extends Controller
     /**
      * Tableau de bord spécifique à l'étudiant.
      */
-    protected function etudiantDashboard($user)
+    public function etudiantDashboard($user)
     {
         $etudiant = $user->etudiant; 
 
@@ -114,7 +114,7 @@ class PortailController extends Controller
     /**
      * Tableau de bord spécifique à la secretaire.
      */
-    protected function secretaireDashboard($user)
+    public function secretaireDashboard($user)
     {
         return view('portails.secretaire.dashboard');
     }
@@ -122,7 +122,7 @@ class PortailController extends Controller
     /**
      * Tableau de bord spécifique au responsable de stage.
      */
-    protected function responsableStageDashboard($user)
+    public function responsableStageDashboard($user)
     {
         return view('portails.responsable-stage.dashboard');
     }
@@ -130,7 +130,7 @@ class PortailController extends Controller
     /**
      * Tableau de bord spécifique au responsable des études.
      */
-    protected function responsableEtudeDashboard($user)
+    public function responsableEtudeDashboard($user)
     {
         return view('portails.responsable-etude.dashboard');
     }
@@ -138,7 +138,7 @@ class PortailController extends Controller
     /**
      * Tableau de bord spécifique au comptable.
      */
-    protected function comptableDashboard($user)
+    public function comptableDashboard($user)
     {
         return view('portails.comptable.dashboard');
     }
@@ -146,7 +146,7 @@ class PortailController extends Controller
     /**
      * Tableau de bord spécifique au directeur general.
      */
-    protected function directeurGeneralDashboard($user)
+    public function directeurGeneralDashboard($user)
     {
         return view('portails.directeur-general.dashboard');
     }
@@ -154,9 +154,9 @@ class PortailController extends Controller
     /**
      * Tableau de bord spécifique à l'administrateur.
      */
-    protected function adminDashboard($user)
+    public function adminDashboard($user)
     {
-        return view('dashboards.admin');
+        return view('portails.admin.dashboard');
     }
      
     /**

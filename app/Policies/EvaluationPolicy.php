@@ -25,7 +25,7 @@ class EvaluationPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(['enseignant', 'etudiant']); // Teachers and students can view lists
+        return $user->hasRole(['enseignant', 'etudiant']) || $user->can('gerer_structure_pedagogique');
     }
 
     /**
@@ -33,8 +33,12 @@ class EvaluationPolicy
      */
     public function view(User $user, Evaluation $evaluation): bool
     {
+        if ($user->can('gerer_structure_pedagogique')) { // Roles admin, responsable_etude
+            return true;
+        }
+
         if ($user->hasRole('enseignant')) {
-            return $user->enseignant->modules->contains($evaluation->module_id);
+            return $user->enseignant && $user->enseignant->modules->contains($evaluation->id_module);
         }
         if ($user->hasRole('etudiant')) {
             // Check if the student is enrolled in the module of this evaluation
@@ -51,7 +55,7 @@ class EvaluationPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('enseignant'); // Only teachers can create evaluations
+        return $user->can('creer_evaluations') || $user->can('gerer_structure_pedagogique');
     }
 
     /**
@@ -59,7 +63,12 @@ class EvaluationPolicy
      */
     public function update(User $user, Evaluation $evaluation): bool
     {
-        return $user->hasRole('enseignant'); // Only teachers can update their evaluations
+        // Un enseignant peut modifier une évaluation s'il a la permission et s'il est affecté au module de l'évaluation
+        if ($user->can('creer_evaluations') && $user->hasRole('enseignant') && $user->enseignant && $user->enseignant->modules->contains($evaluation->id_module)) {
+            return true;
+        }
+        // Un rôle administratif avec gerer_structure_pedagogique peut modifier
+        return $user->can('gerer_structure_pedagogique');
     }
 
     /**
@@ -67,8 +76,7 @@ class EvaluationPolicy
      */
     public function delete(User $user, Evaluation $evaluation): bool
     {
-        // Deletion will be handled by admin/director_general before method
-        return false;
+        return $user->can('gerer_structure_pedagogique');
     }
 
     /**
