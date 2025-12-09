@@ -57,12 +57,6 @@ class DatabaseSeeder extends Seeder
             'consulter_son_emploi_du_temps',
         ]);
 
-        $secretaireRole = Role::firstOrCreate(['name' => 'secretaire', 'guard_name' => 'web']);
-        $secretaireRole->givePermissionTo([
-            'lister_etudiants', 'creer_etudiant', 'modifier_etudiant',
-            'consulter_dossier_etudiant', 'gerer_candidatures', 'gerer_inscriptions', 'gerer_paiements',
-            'consulter_son_emploi_du_temps',
-        ]);
 
         $responsableStageRole = Role::firstOrCreate(['name' => 'responsable_stage', 'guard_name' => 'web']);
         $responsableStageRole->givePermissionTo([
