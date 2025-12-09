@@ -1,187 +1,23 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Portail;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Etudiant;
 use App\Models\Enseignant;
 use App\Models\Cours;
-use App\Models\Semestre; // Ajouté pour la dynamisation du dashboard enseignant
-use App\Models\Module; // Ajouté pour la dynamisation du dashboard enseignant
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Facades\Auth; // Ajouté
+use App\Models\Semestre;
+use App\Models\Module;
 
-class PortailController extends Controller
+class EnseignantDashboardController extends Controller
 {
-    use AuthorizesRequests;
-
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
-    /**
-     * Affiche le tableau de bord pour l'utilisateur connecté en fonction de son rôle.
-     */
-    public function index()
-    {
-        $user = auth()->user();
-
-        if ($user->hasRole('etudiant')) {
-            return $this->etudiantDashboard($user);
-        }
-
-        if ($user->hasRole('enseignant')) {
-            return $this->enseignantDashboard($user);
-        }
-
-        if ($user->hasRole('secretaire')) {
-            return $this->secretaireDashboard($user);
-        }
-
-        if ($user->hasRole('responsable-stage')) {
-            return $this->responsableStageDashboard($user);
-        }
-
-        if ($user->hasRole('responsable-etude')) {
-            return $this->responsableEtudeDashboard($user);
-        }
-
-        if ($user->hasRole('comptable')) {
-            return $this->comptableDashboard($user);
-        }
-
-        if ($user->hasRole('directeur-general')) {
-            return $this->directeurGeneralDashboard($user);
-        }
-
-        if ($user->hasRole('admin')) {
-            return $this->adminDashboard($user);
-        }
-
-        // Fallback for any other role or no role
-        return view('dashboards.admin');
-    }
-
-    /**
-     * Tableau de bord spécifique à l'étudiant.
-     */
-  public function etudiantDashboard($user)
-{
-    // Charger la relation etudiant avec vérification
-    $etudiant = $user->load('etudiant')->etudiant;
-    
-    if (!$etudiant) {
-        return redirect()->route('home')->with('error', 'Vous n\'avez pas de profil étudiant associé.');
-    }
-    // Année académique actuelle
-    $anneeAcademique = now()->year . '-' . (now()->year + 1);
-    
-    // Charger toutes les relations nécessaires en une seule requête optimisée
-    $etudiant->load([
-        'documents',
-        'inscriptionAdmins' => function ($query) use ($anneeAcademique) {
-            $query->where('annee_academique', $anneeAcademique)
-                  ->with([
-                      'parcours.filiere',
-                      'paiements',
-                      'notes.evaluation' => function ($q) {
-                          $q->with([
-                              'evaluationType',
-                              'module.ue.semestre.parcours.filiere'
-                          ]);
-                      },
-                      'stages.entreprise',
-                      'modules.ue.semestre.parcours', // Pour getMoyenneModule
-                      'modules.enseignants'
-                  ]);
-        }
-    ]);
-
-    $inscriptionAdmin = $etudiant->inscriptionAdmins->first();
-    
-    // Initialiser les collections vides par défaut
-    $edt = collect();
-    $moyennesModules = collect();
-
-    if ($inscriptionAdmin && $inscriptionAdmin->modules->isNotEmpty()) {
-        // Récupérer l'emploi du temps avec une seule requête
-        $modulesIds = $inscriptionAdmin->modules->pluck('id')->toArray();
-        
-        $edt = Cours::whereIn('id_module', $modulesIds)
-            ->where('annee_academique', $anneeAcademique)
-            ->with(['module.enseignants', 'salle'])
-            ->orderBy('jour')
-            ->orderBy('heure_debut')
-            ->get()
-            ->groupBy('jour');
-
-        // Calculer les moyennes par module de manière optimisée
-        $moyennesModules = $inscriptionAdmin->modules->mapWithKeys(function ($module) use ($etudiant, $anneeAcademique) {
-            $moyenne = $etudiant->getMoyenneModule($module, $anneeAcademique);
-            return [$module->id => [
-                'moyenne' => $moyenne,
-                'nom_module' => $module->nom ?? $module->libelle,
-                'credit' => $module->credit ?? 0
-            ]];
-        });
-    }
-
-    return view('dashboards.etudiant', compact(
-        'etudiant',
-        'edt',
-        'moyennesModules',
-        'inscriptionAdmin',
-        'anneeAcademique'
-    ));
-}
- 
-
-    /**
-     * Tableau de bord spécifique au responsable de stage.
-     */
-    public function responsableStageDashboard($user)
-    {
-        return view('portails.responsable-stage.dashboard');
-    }
-
-    /**
-     * Tableau de bord spécifique au responsable des études.
-     */
-    public function responsableEtudeDashboard($user)
-    {
-        return view('portails.responsable-etude.dashboard');
-    }
-
-    /**
-     * Tableau de bord spécifique au comptable.
-     */
-    public function comptableDashboard($user)
-    {
-        return view('portails.comptable.dashboard');
-    }
-
-    /**
-     * Tableau de bord spécifique au directeur general.
-     */
-    public function directeurGeneralDashboard($user)
-    {
-        return view('portails.directeur-general.dashboard');
-    }
-
-    /**
-     * Tableau de bord spécifique à l'administrateur.
-     */
-    public function adminDashboard($user)
-    {
-        return view('Dashboards.admin');
-    }
-     
     /**
      * Tableau de bord spécifique à l'enseignant.
      */
-    public function enseignantDashboard($user)
+    public function dashboard(Request $request)
     {
+        $user = $request->user();
         $enseignant = $user->enseignant()->with('departement')->first(); 
         if (!$enseignant) {
             return redirect()->route('dashboard')->with('error', 'Profil enseignant non trouvé.');
@@ -410,7 +246,7 @@ class PortailController extends Controller
         $evolutionEtudiantsParMois['data'] = array_values($etudiantsParMois);
 
 
-        return view('dashboards.enseignant', compact(
+        return view('portails.enseignant.dashboard', compact(
             'enseignant',
             'edt',
             'releves_evaluations_par_module',
@@ -432,9 +268,9 @@ class PortailController extends Controller
     /**
      * Affiche les modules de l'enseignant connecté.
      */
-    public function mesModules()
+    public function mesModules(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user();
         if (!$user->enseignant) {
             abort(403, 'Accès non autorisé.');
         }
@@ -443,13 +279,13 @@ class PortailController extends Controller
             ->with('ue.semestre.parcours.filiere', 'inscriptionAdmins.etudiant.user')
             ->get();
 
-        return view('portails.mes-modules', compact('modules'));
+        return view('portails.enseignant.mes-modules', compact('modules'));
     }
 
     /**
      * Affiche le bilan détaillé d'un étudiant pour l'enseignant.
      */
-    public function showEtudiantBilan(Enseignant $enseignant, Etudiant $etudiant)
+    public function showEtudiantBilan(Request $request, Enseignant $enseignant, Etudiant $etudiant)
     {
         // Autorisation: S'assurer que l'enseignant peut voir ce bilan
         // Par exemple, l'enseignant doit être affecté à au moins un module de cet étudiant.

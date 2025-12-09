@@ -10,8 +10,7 @@ use App\Models\Note; // Added
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class EvaluationController extends Controller
-{
+class EvaluationController extends Controller {
     /**
      * Display a listing of the resource.
      */
@@ -172,3 +171,4 @@ class EvaluationController extends Controller
 
         return redirect()->route('academique.evaluations.index')->with('success', 'Évaluation supprimée avec succès.');
     }
+}

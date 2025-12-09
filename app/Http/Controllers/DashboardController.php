@@ -17,14 +17,14 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         $roleRoutes = [
-            'admin' => 'portail.admin.dashboard',
-            'etudiant' => 'portail.etudiant.dashboard',
-            'enseignant' => 'portail.enseignant.dashboard',
-            'secretaire' => 'portail.secretaire.dashboard',
-            'responsable-stage' => 'portail.responsable_stage.dashboard',
-            'responsable-etude' => 'portail.responsable_etude.dashboard',
-            'comptable' => 'portail.comptable.dashboard',
-            'directeur-general' => 'portail.directeur_general.dashboard',
+            'admin' => 'dashboards.admin.dashboard',
+            // 'etudiant' => 'dashboards.etudiant.dashboard',
+            'enseignant' => 'dashboards.enseignant.dashboard',
+            'secretaire' => 'dashboards.secretaire.dashboard',
+            'responsable-stage' => 'dashboards.responsable_stage.dashboard',
+            'responsable-etude' => 'dashboards.responsable_etude.dashboard',
+            'comptable' => 'dashboards.comptable.dashboard',
+            'directeur-general' => 'dashboards.directeur_general.dashboard',
         ];
 
         foreach ($roleRoutes as $role => $routeName) {
@@ -37,6 +37,6 @@ class DashboardController extends Controller
         // This should ideally not be reached if all roles are covered
         // or a default dashboard exists for unhandled roles.
         // For now, redirect to a generic home or login
-        return redirect()->route('login');
+        return redirect()->route('login_form');
     }
 }
