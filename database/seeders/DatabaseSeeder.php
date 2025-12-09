@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\CustomRole as Role;
+use App\Models\CustomRole;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +15,7 @@ use App\Models\Semestre;
 use App\Models\Ue;
 use App\Models\Module;
 use App\Models\Enseignant;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
