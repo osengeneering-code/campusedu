@@ -31,12 +31,19 @@ use App\Http\Controllers\EnseignantModuleController;
 use App\Http\Controllers\EvaluationTypeController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
+
 use Spatie\Permission\Middleware\PermissionMiddleware;
-use App\Models\Etudiant; // Added
-use App\Models\Enseignant; // Added
-use App\Models\Cours; // Added
-use App\Http\Controllers\PortailController; // Added to call methods
-use Illuminate\Support\Facades\Auth; // Ensure Auth is imported for use in closure
+
+// Import dashboard controllers
+use App\Http\Controllers\Portail\AdminDashboardController;
+use App\Http\Controllers\Portail\EtudiantDashboardController;
+use App\Http\Controllers\Portail\EnseignantDashboardController;
+use App\Http\Controllers\Portail\SecretaireDashboardController;
+use App\Http\Controllers\Portail\ResponsableStageDashboardController;
+use App\Http\Controllers\Portail\ResponsableEtudeDashboardController;
+use App\Http\Controllers\Portail\ComptableDashboardController;
+use App\Http\Controllers\Portail\DirecteurGeneralDashboardController;
+
 
 Route::get('/', function () {
     return view('auth.login');
@@ -48,7 +55,6 @@ Route::prefix('inscriptions')->name('inscriptions.')->group(function () {
     Route::post('candidatures', [CandidatureController::class, 'store'])->name('candidatures.store');
 });
 
-
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
@@ -56,35 +62,45 @@ Route::middleware([
 ])->group(function () {
 
     // --- Messagerie ---
-    // Route::resource('conversations', ConversationController::class)->only(['index', 'show', 'create', 'store']);
     Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');
     Route::get('/conversations/create', [ConversationController::class, 'create'])->name('conversations.create');
     Route::post('/conversations', [ConversationController::class, 'store'])->name('conversations.store');
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
     Route::post('conversations/{conversation}/messages', [MessageController::class, 'store'])->name('messages.store');
 
-    Route::get('/dashboard', [App\Http\Controllers\PortailController::class, 'index'])->name('dashboard');
+    // Main dashboard entry route, redirects to the correct portal based on role
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Route des portails
-    Route::get('/portail', [App\Http\Controllers\PortailController::class, 'index'])->name('portail.index');
-
-    Route::get('/portail/etudiant/dashboard', [App\Http\Controllers\PortailController::class, 'index'])->name('portail.etudiant.dashboard');
-
-    Route::get('/portail/enseignant/dashboard', [App\Http\Controllers\PortailController::class, 'index'])->name('portail.enseignant.dashboard');
-    Route::get('/portail/enseignant/mes-modules', [App\Http\Controllers\PortailController::class, 'mesModules'])->name('portail.enseignant.mes-modules');
-    Route::get('/portail/enseignant/{enseignant}/etudiant/{etudiant}/bilan', [App\Http\Controllers\PortailController::class, 'showEtudiantBilan'])->name('portail.enseignant.etudiant-bilan');
-
-    Route::get('/portail/secretaire/dashboard', [App\Http\Controllers\PortailController::class, 'index'])->name('portail.secretaire.dashboard');
-
-    Route::get('/portail/responsable-stage/dashboard', [App\Http\Controllers\PortailController::class, 'index'])->name('portail.responsable_stage.dashboard');
-
-    Route::get('/portail/responsable-etude/dashboard', [App\Http\Controllers\PortailController::class, 'index'])->name('portail.responsable_etude.dashboard');
-
-    Route::get('/portail/comptable/dashboard', [App\Http\Controllers\PortailController::class, 'index'])->name('portail.comptable.dashboard');
-
-    Route::get('/portail/directeur-general/dashboard', [App\Http\Controllers\PortailController::class, 'index'])->name('portail.directeur_general.dashboard');
-
-    Route::get('/portail/admin/dashboard', [App\Http\Controllers\PortailController::class, 'index'])->name('portail.admin.dashboard');
+    // Route des portails - Each dashboard has its own route, controller method, and role protection
+    Route::group(['prefix' => 'portail', 'as' => 'portail.'], function () {
+        Route::get('/etudiant/dashboard', EtudiantDashboardController::class)
+            ->name('etudiant.dashboard')->middleware('role:etudiant');
+        
+        Route::get('/enseignant/dashboard', [EnseignantDashboardController::class, 'dashboard'])
+            ->name('enseignant.dashboard')->middleware('role:enseignant');
+        Route::get('/enseignant/mes-modules', [EnseignantDashboardController::class, 'mesModules'])
+            ->name('enseignant.mes-modules')->middleware('role:enseignant');
+        Route::get('/enseignant/{enseignant}/etudiant/{etudiant}/bilan', [EnseignantDashboardController::class, 'showEtudiantBilan'])
+            ->name('enseignant.etudiant-bilan')->middleware('role:enseignant');
+        
+        Route::get('/secretaire/dashboard', SecretaireDashboardController::class)
+            ->name('secretaire.dashboard')->middleware('role:secretaire');
+        
+        Route::get('/responsable-stage/dashboard', ResponsableStageDashboardController::class)
+            ->name('responsable_stage.dashboard')->middleware('role:responsable_stage');
+        
+        Route::get('/responsable-etude/dashboard', ResponsableEtudeDashboardController::class)
+            ->name('responsable_etude.dashboard')->middleware('role:responsable_etude');
+        
+        Route::get('/comptable/dashboard', ComptableDashboardController::class)
+            ->name('comptable.dashboard')->middleware('role:comptable');
+        
+        Route::get('/directeur-general/dashboard', DirecteurGeneralDashboardController::class)
+            ->name('directeur_general.dashboard')->middleware('role:directeur_general');
+        
+        Route::get('/admin/dashboard', AdminDashboardController::class)
+            ->name('admin.dashboard')->middleware('role:admin');
+    });
 
     // --- Administration & Sécurité (protégé par le rôle admin) ---
     Route::middleware('role:admin')->group(function() {
