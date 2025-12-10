@@ -31,6 +31,7 @@ use App\Http\Controllers\EnseignantModuleController;
 use App\Http\Controllers\EvaluationTypeController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\BulletinSemestrielController; // NOUVEAU
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use App\Models\Etudiant;
 use App\Models\Enseignant;
@@ -163,9 +164,8 @@ Route::middleware([
         Route::get('trimestriel', function () {
             return 'Page des Bulletins Trimestriels';
         })->name('trimestriel.index');
-        Route::get('semestriel', function () {
-            return 'Page des Bulletins Semestriels';
-        })->name('semestriel.index');
+        Route::get('semestriel', [BulletinSemestrielController::class, 'index'])->name('semestriel.index');
+        Route::get('semestriel/{anneeAcademique}/{semestre}/{etudiant}', [BulletinSemestrielController::class, 'show'])->name('semestriel.show');
         Route::get('annuel', function () {
             return 'Page des Bulletins Annuels';
         })->name('annuel.index');
