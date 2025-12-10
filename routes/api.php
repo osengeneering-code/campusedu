@@ -11,16 +11,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Routes API pour le chargement dynamique des filtres de bulletins
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/filieres-by-departement/{departement}', function (Departement $departement) {
-        return response()->json($departement->filieres);
-    });
+// Ces routes sont destinées à être appelées depuis une interface utilisateur déjà authentifiée par session.
+Route::get('/filieres-by-departement/{departement}', function (Departement $departement) {
+    return response()->json($departement->filieres);
+});
 
-    Route::get('/parcours-by-filiere/{filiere}', function (Filiere $filiere) {
-        return response()->json($filiere->parcours);
-    });
+Route::get('/parcours-by-filiere/{filiere}', function (Filiere $filiere) {
+    return response()->json($filiere->parcours);
+});
 
-    Route::get('/semestres-by-parcours/{parcours}', function (Parcours $parcours) {
-        return response()->json($parcours->semestres);
-    });
+Route::get('/semestres-by-parcours/{parcours}', function (Parcours $parcours) {
+    return response()->json($parcours->semestres);
 });
