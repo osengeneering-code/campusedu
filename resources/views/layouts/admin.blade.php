@@ -251,8 +251,7 @@
                         </ul>
                     </li>
                 
-                      </ul>
-                   </li>
+
             @endcan
 
                         </ul>
