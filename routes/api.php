@@ -19,4 +19,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/parcours-by-filiere/{filiere}', function (Filiere $filiere) {
         return response()->json($filiere->parcours);
     });
+
+    Route::get('/semestres-by-parcours/{parcours}', function (Parcours $parcours) {
+        return response()->json($parcours->semestres);
+    });
 });

@@ -30,7 +30,7 @@
                     </div>
                     <div class="col-md-3">
                         <label for="filiere_id" class="form-label">Filière</label>
-                        <select name="filiere_id" id="filiere_id" class="form-select">
+                        <select name="filiere_id" id="filiere_id" class="form-select" data-selected="{{ request('filiere_id') }}">
                             <option value="">Sélectionner une filière</option>
                             @foreach($filieres as $filiere)
                                 <option value="{{ $filiere->id }}" {{ request('filiere_id') == $filiere->id ? 'selected' : '' }}>{{ $filiere->libelle }}</option>
@@ -39,7 +39,7 @@
                     </div>
                     <div class="col-md-3">
                         <label for="parcours_id" class="form-label">Parcours</label>
-                        <select name="parcours_id" id="parcours_id" class="form-select">
+                        <select name="parcours_id" id="parcours_id" class="form-select" data-selected="{{ request('parcours_id') }}">
                             <option value="">Sélectionner un parcours</option>
                             @foreach($parcours as $p)
                                 <option value="{{ $p->id }}" {{ request('parcours_id') == $p->id ? 'selected' : '' }}>{{ $p->nom }}</option>
@@ -48,7 +48,7 @@
                     </div>
                     <div class="col-md-3">
                         <label for="semestre_id" class="form-label">Semestre</label>
-                        <select name="semestre_id" id="semestre_id" class="form-select">
+                        <select name="semestre_id" id="semestre_id" class="form-select" data-selected="{{ request('semestre_id') }}">
                             <option value="">Sélectionner un semestre</option>
                             @foreach($semestres as $semestre)
                                 <option value="{{ $semestre->id }}" {{ request('semestre_id') == $semestre->id ? 'selected' : '' }}>{{ $semestre->libelle }}</option>
@@ -105,45 +105,66 @@
 
 @section('footer')
 <script>
-    document.getElementById('departement_id').addEventListener('change', function() {
-        var departementId = this.value;
-        var filiereSelect = document.getElementById('filiere_id');
-        var parcoursSelect = document.getElementById('parcours_id');
+    document.addEventListener('DOMContentLoaded', function() {
+        const departementSelect = document.getElementById('departement_id');
+        const filiereSelect = document.getElementById('filiere_id');
+        const parcoursSelect = document.getElementById('parcours_id');
+        const semestreSelect = document.getElementById('semestre_id');
 
-        filiereSelect.innerHTML = '<option value="">Sélectionner une filière</option>';
-        parcoursSelect.innerHTML = '<option value="">Sélectionner un parcours</option>';
-
-        if (departementId) {
-            fetch('/api/filieres-by-departement/' + departementId) // Supposons une API route
-                .then(response => response.json())
-                .then(data => {
-                    data.forEach(function(filiere) {
-                        var option = document.createElement('option');
-                        option.value = filiere.id;
-                        option.textContent = filiere.libelle;
-                        filiereSelect.appendChild(option);
-                    });
-                });
+        // Fonction générique pour charger les options
+        function loadOptions(selectElement, url, selectedId = null, textKey = 'libelle') {
+            selectElement.innerHTML = '<option value="">Sélectionner...</option>'; // Réinitialiser
+            if (url && !url.endsWith('/null')) { // Éviter les appels inutiles si l'ID est null
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item.id;
+                            option.textContent = item[textKey];
+                            if (selectedId && item.id == selectedId) {
+                                option.selected = true;
+                            }
+                            selectElement.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Erreur de chargement des options:', error));
+            }
         }
-    });
 
-    document.getElementById('filiere_id').addEventListener('change', function() {
-        var filiereId = this.value;
-        var parcoursSelect = document.getElementById('parcours_id');
+        // --- Événements de changement ---
+        departementSelect.addEventListener('change', function() {
+            const departementId = this.value;
+            loadOptions(filiereSelect, `/api/filieres-by-departement/${departementId}`, null, 'libelle');
+            parcoursSelect.innerHTML = '<option value="">Sélectionner un parcours</option>'; // Réinitialiser
+            semestreSelect.innerHTML = '<option value="">Sélectionner un semestre</option>'; // Réinitialiser
+        });
 
-        parcoursSelect.innerHTML = '<option value="">Sélectionner un parcours</option>';
+        filiereSelect.addEventListener('change', function() {
+            const filiereId = this.value;
+            loadOptions(parcoursSelect, `/api/parcours-by-filiere/${filiereId}`, null, 'nom');
+            semestreSelect.innerHTML = '<option value="">Sélectionner un semestre</option>'; // Réinitialiser
+        });
 
-        if (filiereId) {
-            fetch('/api/parcours-by-filiere/' + filiereId) // Supposons une API route
-                .then(response => response.json())
-                .then(data => {
-                    data.forEach(function(parcours) {
-                        var option = document.createElement('option');
-                        option.value = parcours.id;
-                        option.textContent = parcours.nom;
-                        parcoursSelect.appendChild(option);
-                    });
-                });
+        parcoursSelect.addEventListener('change', function() {
+            const parcoursId = this.value;
+            loadOptions(semestreSelect, `/api/semestres-by-parcours/${parcoursId}`, null, 'libelle');
+        });
+
+        // --- Pré-remplissage au chargement de la page ---
+        const initialDepartementId = departementSelect.value;
+        const initialFiliereId = filiereSelect.dataset.selected;
+        const initialParcoursId = parcoursSelect.dataset.selected;
+        const initialSemestreId = semestreSelect.dataset.selected;
+
+        if (initialDepartementId) {
+            loadOptions(filiereSelect, `/api/filieres-by-departement/${initialDepartementId}`, initialFiliereId, 'libelle');
+        }
+        if (initialFiliereId) {
+            loadOptions(parcoursSelect, `/api/parcours-by-filiere/${initialFiliereId}`, initialParcoursId, 'nom');
+        }
+        if (initialParcoursId) {
+             loadOptions(semestreSelect, `/api/semestres-by-parcours/${initialParcoursId}`, initialSemestreId, 'libelle');
         }
     });
 </script>

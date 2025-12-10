@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Services\AcademicAverageService;
 use App\Models\Semestre;
-use App->Models\Etudiant;
+use App\Models\Etudiant;
 use App\Models\InscriptionAdmin;
 use App\Models\Departement; // NOUVEAU
-use App->Models\Filiere;    // NOUVEAU
+use App\Models\Filiere;    // NOUVEAU
 use App\Models\Parcours;   // NOUVEAU
 
 class BulletinSemestrielController extends Controller
