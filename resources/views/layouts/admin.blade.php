@@ -133,13 +133,55 @@
             <!-- Portail Étudiant -->
             @role('etudiant')
             <li class="menu-header small text-uppercase"><span class="menu-header-text">Mon Espace</span></li>
-            <li class="menu-item">
-              <a href="{{-- route('portail.etudiant') --}}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-user"></i>
-                <div data-i18n="Mon Portail">Mon Portail</div>
-              </a>
+            <li class="menu-item {{ Request::is('etudiant/*') ? 'active open' : '' }}">
+                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bx-user"></i>
+                    <div data-i18n="Mon Espace">Mon Espace</div>
+                </a>
+                <ul class="menu-sub">
+                    @can('consulter_dossier_etudiant')
+                    <li class="menu-item {{ Request::routeIs('etudiant.dossier') ? 'active' : '' }}">
+                        <a href="{{ route('etudiant.dossier') }}" class="menu-link">
+                            <div data-i18n="Mon Dossier">Mon Dossier</div>
+                        </a>
+                    </li>
+                    @endcan
+                    @can('consulter_ses_notes')
+                    <li class="menu-item {{ Request::routeIs('etudiant.notes') ? 'active' : '' }}">
+                        <a href="{{ route('etudiant.notes') }}" class="menu-link">
+                            <div data-i18n="Mes Notes">Mes Notes</div>
+                        </a>
+                    </li>
+                    @endcan
+                    @can('gerer_son_stage')
+                    <li class="menu-item {{ Request::routeIs('etudiant.stage') ? 'active' : '' }}">
+                        <a href="{{ route('etudiant.stage') }}" class="menu-link">
+                            <div data-i18n="Mon Stage">Mon Stage</div>
+                        </a>
+                    </li>
+                    @endcan
+                    @can('consulter_son_emploi_du_temps')
+                    <li class="menu-item {{ Request::routeIs('etudiant.emploi_du_temps') ? 'active' : '' }}">
+                        <a href="{{ route('etudiant.emploi_du_temps') }}" class="menu-link">
+                            <div data-i18n="Mon Emploi du temps">Mon Emploi du temps</div>
+                        </a>
+                    </li>
+                    @endcan
+                    @can('consulter_ses_paiements')
+                    <li class="menu-item {{ Request::routeIs('etudiant.paiements') ? 'active' : '' }}">
+                        <a href="{{ route('etudiant.paiements') }}" class="menu-link">
+                            <div data-i18n="Mes Paiements">Mes Paiements</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ Request::routeIs('etudiant.mon-parcours') ? 'active' : '' }}">
+                        <a href="{{ route('etudiant.mon-parcours') }}" class="menu-link">
+                            <i class="menu-icon tf-icons bx bx-graduation"></i>
+                            <div data-i18n="Mon Parcours">Mon Parcours</div>
+                        </a>
+                    </li>
+                    @endcan
+                </ul>
             </li>
-            
             @endrole
             
             <!-- Portail Enseignant -->
@@ -205,22 +247,50 @@
                             <li class="menu-item {{ Request::routeIs('academique.ues.*') ? 'active' : '' }}"><a href="{{ route('academique.ues.index') }}" class="menu-link">UE</a></li>
                             <li class="menu-item {{ Request::routeIs('academique.modules.*') ? 'active' : '' }}"><a href="{{ route('academique.modules.index') }}" class="menu-link">Modules</a></li>
                             <li class="menu-item {{ Request::routeIs('academique.salles.*') ? 'active' : '' }}"><a href="{{ route('academique.salles.index') }}" class="menu-link">Salles</a></li>
-                            <li class="menu-item {{ Request::routeIs('academique.evaluation-types.*') ? 'active' : '' }}"><a href="{{ route('academique.evaluation-types.index') }}" class="menu-link">Types d\'Évaluation</a></li>
+
                         </ul>
                     </li>
-                        <li class="menu-item {{ Request::routeIs('gestion-cours.evaluations.*') ? 'active open' : '' }}">
-                            <a href="javascript:void(0);" class="menu-link menu-toggle">
-                                <i class="menu-icon tf-icons bx bx-collection"></i>
-                                <div data-i18n="Notes et Évaluations">Évaluations et Notes</div>
-                            </a>
-                           <ul class="menu-sub">
-                                <li class="menu-item {{ Request::routeIs('gestion-cours.evaluations.*') ? 'active' : '' }}">
-                                    <a href="{{ route('gestion-cours.evaluations.index') }}" class="menu-link">Liste des Évaluations</a>
-                                </li>
-                            </ul>
-                        </li>                
+                
                       </ul>
                    </li>
+            @endcan
+
+                        </ul>
+                    </li>
+
+            {{-- Nouvelle section pour la Gestion des Notes --}}
+            @canany(['gerer_evaluations', 'gerer_notes']) {{-- Assurez-vous d'avoir des permissions appropriées --}}
+            <li class="menu-item {{ Request::is('gestion-notes*') ? 'active open' : '' }}">
+                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bx-chart"></i>
+                    <div data-i18n="Gestion des Notes">Gestion des Notes</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item {{ Request::routeIs('academique.evaluation-types.*') ? 'active' : '' }}"><a href="{{ route('academique.evaluation-types.index') }}" class="menu-link">Types d\'Évaluation</a></li>
+                    <li class="menu-item {{ Request::routeIs('gestion-cours.evaluations.*') ? 'active' : '' }}"><a href="{{ route('gestion-cours.evaluations.index') }}" class="menu-link">Évaluations</a></li>
+                </ul>
+            </li>
+            @endcanany
+
+            {{-- Nouvelle section pour la Gestion des Bulletins --}}
+            @can('gerer_bulletins') {{-- Assurez-vous d'avoir une permission appropriée --}}
+            <li class="menu-item {{ Request::is('gestion-bulletins*') ? 'active open' : '' }}">
+                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bx-file"></i>
+                    <div data-i18n="Gestion des Bulletins">Gestion des Bulletins</div>
+                </a>
+                <ul class="menu-sub">
+                    <li class="menu-item {{ Request::routeIs('bulletins.trimestriel.*') ? 'active' : '' }}">
+                        <a href="{{ route('bulletins.trimestriel.index') }}" class="menu-link">Bulletin Trimestriel</a>
+                    </li>
+                    <li class="menu-item {{ Request::routeIs('bulletins.semestriel.*') ? 'active' : '' }}">
+                        <a href="{{ route('bulletins.semestriel.index') }}" class="menu-link">Bulletin Semestriel</a>
+                    </li>
+                    <li class="menu-item {{ Request::routeIs('bulletins.annuel.*') ? 'active' : '' }}">
+                        <a href="{{ route('bulletins.annuel.index') }}" class="menu-link">Bulletin Annuel</a>
+                    </li>
+                </ul>
+            </li>
             @endcan
 
             @canany(['lister_etudiants', 'gerer_enseignants'])
@@ -496,7 +566,7 @@
                           </li>
                           <li><div class="dropdown-divider my-1"></div></li>
                           <li>
-                            <a class="dropdown-item" href="{{ route('users.show', Auth::user()->id) }}">
+                            <a class="dropdown-item" href="{{ route('profil.show') }}">
                               <i class="icon-base bx bx-user icon-md me-3"></i><span>Mon Profil</span>
                             </a>
                           </li>
