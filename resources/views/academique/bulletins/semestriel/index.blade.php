@@ -21,7 +21,7 @@
                     </div>
                     <div class="col-md-3">
                         <label for="departement_id" class="form-label">Département</label>
-                        <select name="departement_id" id="departement_id" class="form-select">
+                        <select name="departement_id" id="departement_id" class="form-select" data-selected="{{ request('departement_id') }}">
                             <option value="">Sélectionner un département</option>
                             @foreach($departements as $departement)
                                 <option value="{{ $departement->id }}" {{ request('departement_id') == $departement->id ? 'selected' : '' }}>{{ $departement->nom }}</option>
@@ -152,7 +152,7 @@
         });
 
         // --- Pré-remplissage au chargement de la page ---
-        const initialDepartementId = departementSelect.value;
+        const initialDepartementId = departementSelect.dataset.selected;
         const initialFiliereId = filiereSelect.dataset.selected;
         const initialParcoursId = parcoursSelect.dataset.selected;
         const initialSemestreId = semestreSelect.dataset.selected;
@@ -169,4 +169,3 @@
     });
 </script>
 @endsection
-
