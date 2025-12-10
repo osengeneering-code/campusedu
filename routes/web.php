@@ -32,12 +32,11 @@ use App\Http\Controllers\EvaluationTypeController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
 use Spatie\Permission\Middleware\PermissionMiddleware;
-use App\Models\Etudiant; // Added
-use App\Models\Enseignant; // Added
-use App\Models\Cours; // Added
-use App\Http\Controllers\PortailController; // Added to call methods
-use Illuminate\Support\Facades\Auth; // Ensure Auth is imported for use in closure
-
+use App\Models\Etudiant;
+use App\Models\Enseignant;
+use App\Models\Cours;
+use App\Http\Controllers\PortailController;
+use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
     return view('auth.login');
@@ -49,32 +48,30 @@ Route::prefix('inscriptions')->name('inscriptions.')->group(function () {
     Route::post('candidatures', [CandidatureController::class, 'store'])->name('candidatures.store');
 });
 
-
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
 
+    Route::get('/profil', [UserController::class, 'profil'])->name('profil.show');
+
     // --- Messagerie ---
-    // Route::resource('conversations', ConversationController::class)->only(['index', 'show', 'create', 'store']);
     Route::get('/conversations', [ConversationController::class, 'index'])->name('conversations.index');
-    Route::get('/conversations/create', [ConversationController::class, 'create'])->name('conversations.create');
+    Route::get('/conversations/create/{recipient_id?}', [ConversationController::class, 'create'])->name('conversations.create');
     Route::post('/conversations', [ConversationController::class, 'store'])->name('conversations.store');
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
     Route::post('conversations/{conversation}/messages', [MessageController::class, 'store'])->name('messages.store');
 
+    Route::get('/dashboard', [PortailController::class, 'index'])->name('dashboard');
 
-Route::get('/dashboard', [PortailController::class, 'index'])->name('dashboard');
-
-// Routes portail avec middleware role pour sécuriser
-Route::prefix('portail')->name('portail.')->middleware('auth')->group(function () {
-    // Enseignant-specific non-dashboard routes
-    Route::get('/enseignant/mes-modules', [PortailController::class, 'mesModules'])
-        ->name('enseignant.mes-modules')->middleware('role:enseignant');
-    Route::get('/enseignant/{enseignant}/etudiant/{etudiant}/bilan', [PortailController::class, 'showEtudiantBilan'])
-        ->name('enseignant.etudiant-bilan')->middleware('role:enseignant');
-});
+    // Routes portail avec middleware role pour sécuriser
+    Route::prefix('portail')->name('portail.')->middleware('auth')->group(function () {
+        Route::get('/enseignant/mes-modules', [PortailController::class, 'mesModules'])
+            ->name('enseignant.mes-modules')->middleware('role:enseignant');
+        Route::get('/enseignant/{enseignant}/etudiant/{etudiant}/bilan', [PortailController::class, 'showEtudiantBilan'])
+            ->name('enseignant.etudiant-bilan')->middleware('role:enseignant');
+    });
 
     // --- Administration & Sécurité (protégé par le rôle admin) ---
     Route::middleware('role:admin')->group(function() {
@@ -106,22 +103,20 @@ Route::prefix('portail')->name('portail.')->middleware('auth')->group(function (
         Route::get('enseignants/{enseignant}/modules', [EnseignantModuleController::class, 'index'])->name('enseignants.modules.index')->middleware(PermissionMiddleware::class . ':gerer_enseignants');
         Route::post('enseignants/{enseignant}/modules', [EnseignantModuleController::class, 'store'])->name('enseignants.modules.store')->middleware(PermissionMiddleware::class . ':gerer_enseignants');
         Route::resource('etudiants', EtudiantController::class)->middleware(PermissionMiddleware::class . ':lister_etudiants|creer_etudiant|modifier_etudiant');
+        Route::post('etudiants/{etudiant}/initier-inscription', [EtudiantController::class, 'initierInscription'])->name('etudiants.initierInscription')->middleware(PermissionMiddleware::class . ':gerer_inscriptions');
+        Route::get('etudiants/{etudiant}/export-pdf', [EtudiantController::class, 'exportPdf'])->name('etudiants.exportPdf')->middleware(PermissionMiddleware::class . ':lister_etudiants');
         Route::resource('etudiants.documents', DocumentEtudiantController::class)->shallow()->middleware(PermissionMiddleware::class . ':gerer_etudiants');
     });
 
     // --- Admissions & Inscriptions (reste des routes protégées) ---
     Route::prefix('inscriptions')->name('inscriptions.')->middleware(PermissionMiddleware::class . ':gerer_inscriptions|gerer_candidatures')->group(function () {
-        // Reste des routes de ressources pour les candidatures, maintenant avec le middleware de permission
         Route::get('candidatures', [CandidatureController::class, 'index'])->name('candidatures.index');
         Route::get('candidatures/{candidature}', [CandidatureController::class, 'show'])->name('candidatures.show');
         Route::get('candidatures/{candidature}/edit', [CandidatureController::class, 'edit'])->name('candidatures.edit');
         Route::put('candidatures/{candidature}', [CandidatureController::class, 'update'])->name('candidatures.update');
         Route::delete('candidatures/{candidature}', [CandidatureController::class, 'destroy'])->name('candidatures.destroy');
-
-        // Nouvelles routes pour la validation/rejet de candidature
         Route::post('candidatures/{candidature}/validate', [CandidatureController::class, 'validateCandidature'])->name('candidatures.validate');
         Route::post('candidatures/{candidature}/reject', [CandidatureController::class, 'rejectCandidature'])->name('candidatures.reject');
-
         Route::resource('inscription-admins', InscriptionAdminController::class);
     });
 
@@ -129,30 +124,24 @@ Route::prefix('portail')->name('portail.')->middleware('auth')->group(function (
     Route::prefix('gestion-cours')->name('gestion-cours.')->group(function () {
         Route::resource('cours', CoursController::class)->middleware(PermissionMiddleware::class . ':gerer_emplois_du_temps');
         Route::get('emplois-du-temps', [CoursController::class, 'index'])->name('emplois-du-temps')->middleware(PermissionMiddleware::class . ':consulter_son_emploi_du_temps');
-        
-        // Evaluations - specific permissions
         Route::get('evaluations', [EvaluationController::class, 'index'])->name('evaluations.index');
         Route::post('evaluations', [EvaluationController::class, 'store'])->name('evaluations.store')->middleware('permission:creer_evaluations');
         Route::get('evaluations/create', [EvaluationController::class, 'create'])->name('evaluations.create')->middleware('permission:creer_evaluations');
         Route::get('evaluations/{evaluation}', [EvaluationController::class, 'show'])->name('evaluations.show');
-        Route::get('evaluations/{evaluation}/edit', [EvaluationController::class, 'edit'])->name('evaluations.edit')->middleware(PermissionMiddleware::class . ':gerer_structure_pedagogique');
-        Route::put('evaluations/{evaluation}', [EvaluationController::class, 'update'])->name('evaluations.update')->middleware(PermissionMiddleware::class . ':gerer_structure_pedagogique');
+        Route::get('evaluations/{evaluation}/edit', [EvaluationController::class, 'edit'])->name('evaluations.edit');
+        Route::put('evaluations/{evaluation}', [EvaluationController::class, 'update'])->name('evaluations.update');
         Route::patch('evaluations/{evaluation}', [EvaluationController::class, 'update']);
         Route::delete('evaluations/{evaluation}', [EvaluationController::class, 'destroy'])->name('evaluations.destroy')->middleware(PermissionMiddleware::class . ':gerer_structure_pedagogique');
-
-        // Routes pour le remplissage des notes d'une évaluation spécifique
         Route::get('evaluations/{evaluation}/notes/fill', [NoteController::class, 'fill'])->name('evaluations.notes.fill')->middleware('permission:saisir_notes');
         Route::put('evaluations/{evaluation}/notes', [NoteController::class, 'update'])->name('evaluations.notes.store')->middleware('permission:saisir_notes');
     });
 
     // --- Stages & Entreprises ---
     Route::prefix('stages')->name('stages.')->group(function () {
-        // Routes pour la gestion complète (Responsable Stage, Admin)
         Route::middleware(PermissionMiddleware::class . ':gerer_stages')->group(function () {
             Route::resource('entreprises', EntrepriseController::class);
             Route::resource('conventions', ConventionStageController::class);
             Route::resource('soutenances', SoutenanceController::class);
-            // Pour la ressource stages, certaines actions peuvent être gérées par 'gerer_stages'
             Route::get('stages/create', [StageController::class, 'create'])->name('stages.create');
             Route::post('stages', [StageController::class, 'store'])->name('stages.store');
             Route::get('stages/{stage}/edit', [StageController::class, 'edit'])->name('stages.edit');
@@ -161,7 +150,6 @@ Route::prefix('portail')->name('portail.')->middleware('auth')->group(function (
             Route::delete('stages/{stage}', [StageController::class, 'destroy'])->name('stages.destroy');
         });
 
-        // Routes spécifiques pour l'enseignant (stages tutorés)
         Route::get('stages', [StageController::class, 'index'])->name('stages.index')->middleware(PermissionMiddleware::class . ':suivre_stages_tuteur');
         Route::get('stages/{stage}', [StageController::class, 'show'])->name('stages.show')->middleware(PermissionMiddleware::class . ':suivre_stages_tuteur');
     });
@@ -170,7 +158,29 @@ Route::prefix('portail')->name('portail.')->middleware('auth')->group(function (
     Route::resource('paiements', PaiementController::class)->middleware(PermissionMiddleware::class . ':gerer_paiements');
     Route::get('paiements/{paiement}/receipt', [PaiementController::class, 'receipt'])->name('paiements.receipt')->middleware(PermissionMiddleware::class . ':consulter_ses_paiements');
 
+    // --- Gestion des Bulletins ---
+    Route::prefix('bulletins')->name('bulletins.')->middleware(PermissionMiddleware::class . ':gerer_bulletins')->group(function () {
+        Route::get('trimestriel', function () {
+            return 'Page des Bulletins Trimestriels';
+        })->name('trimestriel.index');
+        Route::get('semestriel', function () {
+            return 'Page des Bulletins Semestriels';
+        })->name('semestriel.index');
+        Route::get('annuel', function () {
+            return 'Page des Bulletins Annuels';
+        })->name('annuel.index');
+    });
+
     Route::get('gestion-cours/emploi-du-temps/pdf', [CoursController::class, 'downloadPdf'])->name('emplois-du-temps.pdf');
 
+});
 
+Route::group(['middleware' => ['auth', 'role:etudiant'], 'prefix' => 'etudiant', 'as' => 'etudiant.'], function () {
+    Route::get('dossier', [\App\Http\Controllers\EtudiantPortailController::class, 'dossier'])->name('dossier');
+    Route::get('notes', [\App\Http\Controllers\EtudiantPortailController::class, 'notes'])->name('notes');
+    Route::get('stage', [\App\Http\Controllers\EtudiantPortailController::class, 'stage'])->name('stage');
+    Route::get('mon-parcours', [\App\Http\Controllers\EtudiantPortailController::class, 'monParcours'])->name('mon-parcours');
+    Route::post('stage/{stage}/submit-report', [\App\Http\Controllers\StageController::class, 'submitReport'])->name('stage.submit_report');
+    Route::get('emploi-du-temps', [\App\Http\Controllers\EtudiantPortailController::class, 'emploi_du_temps'])->name('emploi_du_temps');
+    Route::get('paiements', [\App\Http\Controllers\PaiementController::class, 'index'])->name('paiements');
 });
