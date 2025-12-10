@@ -210,4 +210,11 @@ class UserController extends Controller
 
         return redirect()->back()->with('toastr_success', 'Mot de passe mis à jour avec succès !');
     }
+
+    public function profil()
+    {
+        $user = auth()->user();
+        $user->load('etudiant', 'enseignant', 'roles');
+        return view('profil.show', compact('user'));
+    }
 }

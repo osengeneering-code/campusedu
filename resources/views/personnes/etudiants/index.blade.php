@@ -40,6 +40,12 @@
                                 @can('modifier_etudiant')
                                 <a class="dropdown-item" href="{{ route('personnes.etudiants.edit', $etudiant) }}"><i class="bx bx-edit-alt me-1"></i> Modifier</a>
                                 @endcan
+                                @can('gerer_inscriptions')
+                                <form action="{{ route('personnes.etudiants.initierInscription', $etudiant) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item"><i class="bx bx-credit-card me-1"></i> Passer au paiement</button>
+                                </form>
+                                @endcan
                                 @can('supprimer_etudiant')
                                 <form action="{{ route('personnes.etudiants.destroy', $etudiant) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet étudiant ?');">
                                     @csrf

@@ -17,7 +17,7 @@ class PaiementController extends Controller
     public function index()
     {
         // Construction de la requête de base
-        $query = Paiement::with('inscriptionAdmin.etudiant');
+        $query = Paiement::with('inscriptionAdmin.etudiant', 'inscriptionAdmin.parcours', 'inscriptionAdmin.paiements');
 
         // Filtrage pour les étudiants
         if (auth()->user()->hasRole('etudiant')) {
@@ -30,6 +30,19 @@ class PaiementController extends Controller
         // Récupération des paiements paginés
         $paiements = $query->latest()->paginate(10);
         
+        // Calculer les soldes de scolarité pour chaque inscription visible
+        $soldesScolarite = collect();
+        foreach ($paiements as $paiement) {
+            if ($paiement->inscriptionAdmin && $paiement->inscriptionAdmin->parcours) {
+                $inscription = $paiement->inscriptionAdmin;
+                if (!$soldesScolarite->has($inscription->id)) { // Calculer une seule fois par inscription
+                    $totalScolarite = $inscription->parcours->frais_formation ?? 0;
+                    $dejaPaye = $inscription->paiements->where('type_frais', 'Scolarité')->where('statut_paiement', 'Payé')->sum('montant');
+                    $soldesScolarite->put($inscription->id, $totalScolarite - $dejaPaye);
+                }
+            }
+        }
+
         // Statistiques
         $baseQuery = auth()->user()->hasRole('etudiant') 
             ? Paiement::whereHas('inscriptionAdmin', function ($q) use ($etudiantId) {
@@ -105,15 +118,27 @@ class PaiementController extends Controller
             ]
         ];
         
-        return view('financier.paiements.index', compact('paiements', 'stats', 'chartData'));
+        return view('financier.paiements.index', compact('paiements', 'stats', 'chartData', 'soldesScolarite'));
     }
 
     public function create()
     {
-        $inscriptions = InscriptionAdmin::with('etudiant')->get();
+        $inscriptions = InscriptionAdmin::with('etudiant', 'parcours', 'paiements')->get();
         $typesFrais = ['Inscription', 'Scolarité', 'Autre'];
         $methodesPaiement = ['Carte bancaire', 'Virement', 'Chèque', 'Espèces'];
-        return view('financier.paiements.create', compact('inscriptions', 'typesFrais', 'methodesPaiement'));
+        
+        $fraisParcours = $inscriptions->keyBy('id')->map(function ($inscription) {
+            return $inscription->parcours->frais_inscription ?? 0;
+        });
+
+        // Calculer le solde restant pour la scolarité pour chaque inscription
+        $soldesScolarite = $inscriptions->keyBy('id')->map(function ($inscription) {
+            $totalScolarite = $inscription->parcours->frais_formation ?? 0;
+            $dejaPaye = $inscription->paiements->where('type_frais', 'Scolarité')->where('statut_paiement', 'Payé')->sum('montant');
+            return $totalScolarite - $dejaPaye;
+        });
+
+        return view('financier.paiements.create', compact('inscriptions', 'typesFrais', 'methodesPaiement', 'fraisParcours', 'soldesScolarite'));
     }
 
     public function store(Request $request)
@@ -124,10 +149,18 @@ class PaiementController extends Controller
             'type_frais' => ['required', Rule::in(['Inscription', 'Scolarité', 'Autre'])],
             'date_paiement' => 'required|date',
             'methode_paiement' => ['required', Rule::in(['Carte bancaire', 'Virement', 'Chèque', 'Espèces'])],
+            'mois_concerne' => 'required_if:type_frais,Scolarité|nullable|string',
         ]);
 
         $reference = 'PAI-' . strtoupper(Str::random(10));
         Paiement::create($request->all() + ['reference_paiement' => $reference, 'statut_paiement' => 'Payé']);
+
+        // Mettre à jour le statut de l'inscription si elle était en attente
+        $inscription = InscriptionAdmin::find($request->id_inscription_admin);
+        if ($inscription && $inscription->statut === 'En attente de paiement') {
+            $inscription->statut = 'Validée';
+            $inscription->save();
+        }
 
         return redirect()->route('paiements.index')->with('success', 'Paiement enregistré avec succès.');
     }

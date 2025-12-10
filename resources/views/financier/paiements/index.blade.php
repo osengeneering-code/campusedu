@@ -210,6 +210,7 @@
                             <th class="border-0">Étudiant</th>
                             <th class="border-0">Type</th>
                             <th class="border-0">Montant</th>
+                            <th class="border-0">Solde Scolarité</th>
                             <th class="border-0">Date</th>
                             <th class="border-0">Statut</th>
                             <th class="border-0 text-end pe-3">Actions</th>
@@ -238,6 +239,18 @@
                                 <strong>{{ number_format($paiement->montant, 0, ',', ' ') }}</strong>
                                 <small class="text-muted d-block">F CFA</small>
                             </td>
+                            <td>
+                                @if($paiement->type_frais === 'Scolarité' && isset($soldesScolarite[$paiement->id_inscription_admin]))
+                                    @php $solde = $soldesScolarite[$paiement->id_inscription_admin]; @endphp
+                                    @if($solde <= 0)
+                                        <span class="badge bg-success">Soldé</span>
+                                    @else
+                                        <strong>{{ number_format($solde, 0, ',', ' ') }}</strong> <small class="text-muted">F CFA</small>
+                                    @endif
+                                @else
+                                    N/A
+                                @endif
+                            </td>
                             <td class="text-muted">{{ \Carbon\Carbon::parse($paiement->date_paiement)->format('d/m/Y') }}</td>
                             <td>
                                 <span class="badge rounded-pill bg-{{ $paiement->statut_paiement == 'Payé' ? 'success' : 'warning' }}">
@@ -262,7 +275,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">
+                            <td colspan="8" class="text-center py-4 text-muted">
                                 <i class="bx bx-folder-open bx-lg d-block mb-2"></i>
                                 Aucune transaction trouvée
                             </td>

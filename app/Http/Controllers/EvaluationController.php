@@ -5,18 +5,26 @@ namespace App\Http\Controllers;
 use App\Models\Evaluation;
 use App\Models\Module;
 use App\Models\EvaluationType;
-use App\Models\InscriptionAdmin; // Added
-use App\Models\Note; // Added
+use App\Models\Note;
+use App\Services\AcademicService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class EvaluationController extends Controller {
+
+    protected $academicService;
+
+    public function __construct(AcademicService $academicService)
+    {
+        $this->academicService = $academicService;
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $this->authorize('viewAny', Evaluation::class); // Autorise la visualisation de la liste
+        $this->authorize('viewAny', Evaluation::class);
 
         $query = Evaluation::with('module.ue.semestre.parcours', 'evaluationType');
 
@@ -55,19 +63,16 @@ class EvaluationController extends Controller {
     public function store(Request $request)
     {
         $this->authorize('create', Evaluation::class);
-        // Valider les données
         $validatedData = $request->validate([
             'libelle' => 'required|string|max:255',
             'date_evaluation' => 'required|date',
             'id_module' => 'required|exists:modules,id',
             'evaluation_type_id' => 'required|exists:evaluation_types,id',
-            'annee_academique' => 'required|string|max:9', // Ex: 2023-2024
+            'annee_academique' => 'required|string|max:9',
         ]);
 
-        // La politique vérifie déjà si l'enseignant est autorisé à créer pour ce module
-        // La logique suivante peut être simplifiée si la politique est assez robuste.
-        // Ou bien, si la politique ne peut pas filtrer par id_module directement pour 'create',
-        // alors cette vérification spécifique reste nécessaire APRES l'autorisation de la politique.
+        $validatedData['created_by'] = Auth::id();
+        
         if (Auth::user()->hasRole('enseignant')) {
              $teacherModules = Auth::user()->enseignant->modules->pluck('id')->toArray();
              if (!in_array($validatedData['id_module'], $teacherModules)) {
@@ -75,28 +80,20 @@ class EvaluationController extends Controller {
              }
         }
 
-        // Créer une nouvelle évaluation
         $evaluation = Evaluation::create($validatedData);
 
-        // Générer automatiquement les entrées de notes pour tous les étudiants inscrits au module
-        $module = Module::find($validatedData['id_module']);
-        $anneeAcademique = $validatedData['annee_academique'];
-
-        // Trouver tous les InscriptionAdmin liés au même parcours que le module, pour l'année académique
-        $inscriptionAdmins = InscriptionAdmin::where('id_parcours', $module->ue->semestre->parcours->id)
-            ->where('annee_academique', $anneeAcademique)
-            ->get();
+        $inscriptionAdmins = $this->academicService->getEnrolledStudentsForEvaluation($evaluation);
 
         foreach ($inscriptionAdmins as $inscriptionAdmin) {
             Note::create([
                 'id_evaluation' => $evaluation->id,
                 'id_inscription_admin' => $inscriptionAdmin->id,
-                'note_obtenue' => null, // Initialiser la note à null
-                'est_absent' => false, // Initialiser comme non absent
+                'note_obtenue' => null,
+                'est_absent' => false,
             ]);
         }
 
-        return redirect()->route('academique.evaluations.index')->with('success', 'Évaluation créée avec succès.');
+        return redirect()->route('gestion-cours.evaluations.index')->with('success', 'Évaluation créée avec succès.');
     }
 
     /**
@@ -105,7 +102,7 @@ class EvaluationController extends Controller {
     public function show(Evaluation $evaluation)
     {
         $this->authorize('view', $evaluation);
-        $evaluation->load('module.ue.semestre.parcours.filiere', 'evaluationType'); // Charger les relations nécessaires
+        $evaluation->load('module.ue.semestre.parcours.filiere', 'evaluationType');
         return view('academique.evaluations.show', compact('evaluation'));
     }
 
@@ -115,7 +112,6 @@ class EvaluationController extends Controller {
     public function edit(Evaluation $evaluation)
     {
         $this->authorize('update', $evaluation);
-        // Filter modules based on user role for edit view also
         $modulesQuery = Module::with('ue.semestre.parcours')->orderBy('libelle');
         if (Auth::check() && Auth::user()->hasRole('enseignant')) {
             $modulesQuery->whereHas('enseignants', function ($query) {
@@ -126,7 +122,6 @@ class EvaluationController extends Controller {
         
         $evaluationTypes = EvaluationType::orderBy('name')->get();
 
-        // Retourne la vue pour le formulaire d'édition
         return view('academique.evaluations.edit', compact('evaluation', 'modules', 'evaluationTypes'));
     }
 
@@ -136,16 +131,14 @@ class EvaluationController extends Controller {
     public function update(Request $request, Evaluation $evaluation)
     {
         $this->authorize('update', $evaluation);
-        // Valider les données
         $validatedData = $request->validate([
             'libelle' => 'required|string|max:255',
             'date_evaluation' => 'required|date',
             'id_module' => 'required|exists:modules,id',
             'evaluation_type_id' => 'required|exists:evaluation_types,id',
-            'annee_academique' => 'required|string|max:9', // Ex: 2023-2024
+            'annee_academique' => 'required|string|max:9',
         ]);
         
-        // Authorization check for update
         if (Auth::check() && Auth::user()->hasRole('enseignant')) {
             $teacherModules = Auth::user()->enseignant->modules->pluck('id')->toArray();
             if (!in_array($validatedData['id_module'], $teacherModules)) {
@@ -153,8 +146,6 @@ class EvaluationController extends Controller {
             }
         }
 
-
-        // Mettre à jour l'évaluation
         $evaluation->update($validatedData);
 
         return redirect()->route('academique.evaluations.index')->with('success', 'Évaluation mise à jour avec succès.');
@@ -166,7 +157,6 @@ class EvaluationController extends Controller {
     public function destroy(Evaluation $evaluation)
     {
         $this->authorize('delete', $evaluation);
-        // Supprimer l'évaluation
         $evaluation->delete();
 
         return redirect()->route('academique.evaluations.index')->with('success', 'Évaluation supprimée avec succès.');

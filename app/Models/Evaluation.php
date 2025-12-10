@@ -15,6 +15,7 @@ class Evaluation extends Model
         'libelle',
         'date_evaluation',
         'evaluation_type_id',
+        'created_by',
     ];
 
     protected $casts = [

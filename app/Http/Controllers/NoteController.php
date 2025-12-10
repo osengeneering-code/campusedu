@@ -4,16 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Note;
 use App\Models\Evaluation;
-use App\Models\Module;
-use App\Models\InscriptionAdmin;
+use App\Services\AcademicService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate; // Pour Gate::denies
-use Illuminate\Support\Facades\Auth; // Pour Auth::user()
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class NoteController extends Controller
 {
     use AuthorizesRequests;
+
+    protected $academicService;
+
+    public function __construct(AcademicService $academicService)
+    {
+        $this->academicService = $academicService;
+    }
 
     /**
      * Affiche le formulaire pour saisir ou éditer les notes d'une évaluation spécifique.
@@ -24,21 +29,25 @@ class NoteController extends Controller
     {
         $this->authorize('fillNotes', $evaluation);
 
-        $etudiantsInscrits = InscriptionAdmin::where('annee_academique', $evaluation->annee_academique)
-            ->whereHas('parcours.semestres.ues', function ($query) use ($evaluation) {
-                $query->where('id', $evaluation->module->ue->id);
-            })
-            ->with('etudiant')
-            ->get();
+        $etudiantsInscrits = $this->academicService->getEnrolledStudentsForEvaluation($evaluation);
+
+        if ($etudiantsInscrits->isEmpty()) {
+            // Optionnel : retourner une information si aucun étudiant n'est trouvé
+            // pour éviter une vue vide sans explication.
+            // return back()->with('info', 'Aucun étudiant inscrit à ce parcours pour cette année académique.');
+        }
 
         $notesExistantes = Note::where('id_evaluation', $evaluation->id)
                                 ->pluck('note_obtenue', 'id_inscription_admin');
         
+        $notesAppreciationsExistantes = Note::where('id_evaluation', $evaluation->id)
+                                             ->pluck('appreciation', 'id_inscription_admin');
+
         $absentsExistants = Note::where('id_evaluation', $evaluation->id)
                                 ->where('est_absent', true)
                                 ->pluck('est_absent', 'id_inscription_admin');
 
-        return view('academique.notes.fill', compact('evaluation', 'etudiantsInscrits', 'notesExistantes', 'absentsExistants'));
+        return view('academique.notes.fill', compact('evaluation', 'etudiantsInscrits', 'notesExistantes', 'notesAppreciationsExistantes', 'absentsExistants'));
     }
 
     /**
@@ -69,14 +78,10 @@ class NoteController extends Controller
             ]);
 
             // Logique "enseignant ne peut pas modifier un relevé de note"
-            // Si l'utilisateur est un enseignant ET la note existe déjà et a été remplie
-            // et que la note_obtenue est différente de l'ancienne ou que l'absence est changée
             if (Auth::user()->hasRole('enseignant')) {
-                // Si la note_obtenue actuelle est non nulle et l'enseignant essaie de la changer
                 if ($existingNote->exists && $existingNote->note_obtenue !== null && $existingNote->note_obtenue !== $noteData['note_obtenue']) {
                     return back()->with('error', 'Vous n\'êtes pas autorisé à modifier une note déjà remplie.')->withInput();
                 }
-                 // Si l'absence était false et devient true
                 if ($existingNote->exists && !$existingNote->est_absent && ($noteData['est_absent'] ?? false)) {
                      return back()->with('error', 'Vous n\'êtes pas autorisé à marquer absent un étudiant déjà noté.')->withInput();
                 }

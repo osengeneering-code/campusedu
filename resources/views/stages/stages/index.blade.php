@@ -410,7 +410,7 @@
                     <i class='bx bx-show'></i> Voir le dossier
                 </a>
                 
-                <a href="{{ route('chat.etudiant', $stage->inscriptionAdmin->etudiant->id ?? '#') }}" class="action-btn btn-chat">
+                <a href="{{ route('conversations.create', ['recipient_id' => $stage->inscriptionAdmin->etudiant->id ?? '']) }}" class="action-btn btn-chat">
                     <i class='bx bx-message-dots'></i> Discuter
                 </a>
                 

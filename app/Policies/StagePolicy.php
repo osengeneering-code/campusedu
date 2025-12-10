@@ -33,6 +33,11 @@ class StagePolicy
      */
     public function view(User $user, Stage $stage): bool
     {
+        // L'étudiant peut voir son propre stage
+        if ($user->hasRole('etudiant') && $user->etudiant && $stage->inscriptionAdmin->id_etudiant === $user->etudiant->id) {
+            return true;
+        }
+
         // Enseignant peut voir son stage tutoré
         if ($user->can('suivre_stages_tuteur') && $user->enseignant && $stage->id_enseignant_tuteur === $user->enseignant->id) {
             return true;

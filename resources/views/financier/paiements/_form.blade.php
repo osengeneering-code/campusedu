@@ -5,9 +5,11 @@
         <select id="id_inscription_admin" name="id_inscription_admin" class="form-select @error('id_inscription_admin') is-invalid @enderror" required>
             <option value="">Sélectionnez un étudiant</option>
             @foreach($inscriptions as $inscription)
-            <option value="{{ $inscription->id }}" @selected(old('id_inscription_admin', $paiement->id_inscription_admin ?? '') == $inscription->id)>
-                {{ $inscription->etudiant->nom }} {{ $inscription->etudiant->prenom }} ({{ $inscription->annee_academique }})
-            </option>
+                @if($inscription->etudiant)
+                    <option value="{{ $inscription->id }}" data-parcours-id="{{ $inscription->id_parcours }}" @selected(old('id_inscription_admin', $paiement->id_inscription_admin ?? '') == $inscription->id)>
+                        {{ $inscription->etudiant->nom }} {{ $inscription->etudiant->prenom }} ({{ $inscription->annee_academique }})
+                    </option>
+                @endif
             @endforeach
         </select>
         @error('id_inscription_admin') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -31,6 +33,15 @@
             @endforeach
         </select>
         @error('type_frais') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="col-md-6 mb-3" id="mois-concerne-wrapper" style="display: none;">
+        <label for="mois_concerne" class="form-label">Mois Concerné</label>
+        <select id="mois_concerne" name="mois_concerne" class="form-select">
+            <option value="">Sélectionnez un mois</option>
+            @foreach(['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] as $mois)
+                <option value="{{ $mois }}" @selected(old('mois_concerne', $paiement->mois_concerne ?? '') == $mois)>{{ $mois }}</option>
+            @endforeach
+        </select>
     </div>
     <div class="col-md-6 mb-3">
         <label for="methode_paiement" class="form-label">Méthode de paiement</label>
@@ -69,3 +80,39 @@
 
 <button type="submit" class="btn btn-primary">{{ isset($paiement) ? 'Mettre à jour' : 'Enregistrer' }}</button>
 <a href="{{ route('paiements.index') }}" class="btn btn-label-secondary">Annuler</a>
+
+@section('footer')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const fraisParcours = @json($fraisParcours);
+    const inscriptionSelect = document.getElementById('id_inscription_admin');
+    const typeFraisSelect = document.getElementById('type_frais');
+    const montantInput = document.getElementById('montant');
+    const moisWrapper = document.getElementById('mois-concerne-wrapper');
+
+    function updateForm() {
+        const selectedType = typeFraisSelect.value;
+        const selectedInscriptionId = inscriptionSelect.value;
+        
+        montantInput.readOnly = false;
+        moisWrapper.style.display = 'none';
+
+        if (selectedInscriptionId && selectedType === 'Inscription') {
+            const frais = fraisParcours[selectedInscriptionId] || 0;
+            montantInput.value = frais;
+            montantInput.readOnly = true;
+        } else if (selectedType === 'Scolarité') {
+            moisWrapper.style.display = 'block';
+        } else if (selectedType !== 'Inscription') {
+            montantInput.value = '';
+        }
+    }
+
+    inscriptionSelect.addEventListener('change', updateForm);
+    typeFraisSelect.addEventListener('change', updateForm);
+
+    // Initial call in case of old input
+    updateForm();
+});
+</script>
+@endsection

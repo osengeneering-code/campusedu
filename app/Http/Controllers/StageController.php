@@ -36,7 +36,7 @@ class StageController extends Controller
     public function create()
     {
         $this->authorize('create', Stage::class);
-        $inscriptions = InscriptionAdmin::with('etudiant')->where('annee_academique', date('Y').'-'.(date('Y')+1))->doesntHave('stages')->get();
+        $inscriptions = InscriptionAdmin::with('etudiant')->doesntHave('stages')->get();
         $entreprises = Entreprise::orderBy('nom_entreprise')->get();
         $enseignants = Enseignant::orderBy('nom')->get();
         return view('stages.stages.create', compact('inscriptions', 'entreprises', 'enseignants'));
@@ -102,6 +102,27 @@ class StageController extends Controller
         $stage->delete();
 
         return redirect()->route('stages.stages.index')->with('success', 'Stage supprimé avec succès.');
+    }
+
+    public function submitReport(Request $request, Stage $stage)
+    {
+        $request->validate([
+            'rapport' => 'required|file|mimes:pdf|max:10240', // Max 10MB PDF
+        ]);
+
+        // Authorization: Ensure the logged-in user is the student associated with this stage
+        $this->authorize('view', $stage);
+
+        // Store the file
+        $path = $request->file('rapport')->store('rapports', 'public');
+
+        // Update the stage record
+        $stage->update([
+            'rapport_path' => $path,
+            'statut_rapport' => 'soumis',
+        ]);
+
+        return back()->with('success', 'Votre rapport a été soumis avec succès.');
     }
 }
 

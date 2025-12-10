@@ -14,6 +14,7 @@ class Paiement extends Model
         'reference_paiement',
         'montant',
         'type_frais',
+        'mois_concerne',
         'date_paiement',
         'methode_paiement',
         'statut_paiement',

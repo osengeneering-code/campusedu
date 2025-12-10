@@ -38,7 +38,7 @@
                                            min="0" 
                                            max="{{ $evaluation->evaluationType->max_score ?? '20' }}" 
                                            step="0.01"
-                                           value="{{ old('notes.' . $loop->index . '.note_obtenue', $notesExistantes[$inscription->id]->note_obtenue ?? '') }}"
+                                           value="{{ old('notes.' . $loop->index . '.note_obtenue', $notesExistantes[$inscription->id] ?? '') }}"
                                            {{ ($absentsExistants[$inscription->id] ?? false) ? 'disabled' : '' }}>
                                     @error('notes.' . $loop->index . '.note_obtenue')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -48,7 +48,7 @@
                                     <input type="text" 
                                            name="notes[{{ $loop->index }}][appreciation]" 
                                            class="form-control @error('notes.' . $loop->index . '.appreciation') is-invalid @enderror" 
-                                           value="{{ old('notes.' . $loop->index . '.appreciation', $notesExistantes[$inscription->id]->appreciation ?? '') }}"
+                                           value="{{ old('notes.' . $loop->index . '.appreciation', $notesAppreciationsExistantes[$inscription->id] ?? '') }}"
                                            {{ ($absentsExistants[$inscription->id] ?? false) ? 'disabled' : '' }}>
                                     @error('notes.' . $loop->index . '.appreciation')
                                         <div class="invalid-feedback">{{ $message }}</div>

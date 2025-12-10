@@ -19,6 +19,9 @@ class Stage extends Model
         'nom_tuteur_entreprise',
         'email_tuteur_entreprise',
         'statut_validation',
+        'rapport_path',
+        'feedback',
+        'statut_rapport',
     ];
 
     public function inscriptionAdmin()

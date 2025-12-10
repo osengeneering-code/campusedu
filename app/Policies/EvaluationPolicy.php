@@ -40,12 +40,20 @@ class EvaluationPolicy
         if ($user->hasRole('enseignant')) {
             return $user->enseignant && $user->enseignant->modules->contains($evaluation->id_module);
         }
+        
         if ($user->hasRole('etudiant')) {
-            // Check if the student is enrolled in the module of this evaluation
-            return $user->etudiant->inscriptionAdmins->where('annee_academique', $evaluation->annee_academique)
-                                                     ->whereHas('parcours.semestres.ues', function($query) use ($evaluation) {
-                                                         $query->where('id', $evaluation->module->ue->id);
-                                                     })->isNotEmpty();
+            $evaluation->loadMissing('module.ue.semestre.parcours');
+
+            if (!$evaluation->module?->ue?->semestre?->parcours) {
+                return false;
+            }
+
+            $parcoursId = $evaluation->module->ue->semestre->parcours->id;
+
+            return $user->etudiant->inscriptionAdmins
+                ->where('annee_academique', $evaluation->annee_academique)
+                ->where('id_parcours', $parcoursId)
+                ->isNotEmpty();
         }
         return false;
     }
@@ -65,6 +73,10 @@ class EvaluationPolicy
     {
         // Un enseignant peut modifier une évaluation s'il a la permission et s'il est affecté au module de l'évaluation
         if ($user->can('creer_evaluations') && $user->hasRole('enseignant') && $user->enseignant && $user->enseignant->modules->contains($evaluation->id_module)) {
+            return true;
+        }
+        // Un utilisateur peut modifier une évaluation s'il en est le créateur
+        if ($user->id === $evaluation->created_by) {
             return true;
         }
         // Un rôle administratif avec gerer_structure_pedagogique peut modifier
@@ -100,9 +112,6 @@ class EvaluationPolicy
      */
     public function fillNotes(User $user, Evaluation $evaluation): bool
     {
-        if ($user->hasRole('enseignant')) {
-            return $user->enseignant->modules->contains($evaluation->id_module);
-        }
-        return false;
+        return $user->can('saisir_notes');
     }
 }

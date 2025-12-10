@@ -12,6 +12,24 @@
         </a>
         @endcan
     </div>
+
+    <div class="px-4">
+        <ul class="nav nav-tabs nav-pills">
+            <li class="nav-item">
+                <a class="nav-link {{ $status == 'En attente' ? 'active' : '' }}" href="{{ route('inscriptions.candidatures.index', ['status' => 'En attente']) }}">En attente</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $status == 'Validée' ? 'active' : '' }}" href="{{ route('inscriptions.candidatures.index', ['status' => 'Validée']) }}">Validées</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $status == 'Rejetée' ? 'active' : '' }}" href="{{ route('inscriptions.candidatures.index', ['status' => 'Rejetée']) }}">Rejetées</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ !$status ? 'active' : '' }}" href="{{ route('inscriptions.candidatures.index') }}">Toutes</a>
+            </li>
+        </ul>
+    </div>
+
     <div class="table-responsive text-nowrap">
         <table class="table table-hover">
             <thead>
@@ -19,7 +37,7 @@
                     <th>Nom Complet</th>
                     <th>Email</th>
                     <th>Téléphone</th>
-                    <th>Niveau Demandé</th>
+                    <th>Parcours Demandé</th>
                     <th>Statut</th>
                     <th>Actions</th>
                 </tr>
@@ -30,7 +48,7 @@
                     <td><strong>{{ $candidature->prenom }} {{ $candidature->nom }}</strong></td>
                     <td>{{ $candidature->email }}</td>
                     <td>{{ $candidature->telephone }}</td>
-                    <td>{{ $candidature->niveau_etude_demande }}</td>
+                    <td>{{ $candidature->parcours->nom ?? 'N/A' }}</td>
                     <td><span class="badge bg-label-info">{{ $candidature->statut ?? 'En attente' }}</span></td>
                     <td>
                         <a href="{{ route('inscriptions.candidatures.show', $candidature) }}" class="btn btn-sm btn-info">Détails</a>
@@ -44,14 +62,14 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="text-center">Aucune candidature trouvée.</td>
+                    <td colspan="6" class="text-center">Aucune candidature trouvée pour ce statut.</td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
     <div class="mt-3 px-3">
-        {{ $candidatures->links() }}
+        {{ $candidatures->appends(['status' => $status])->links() }}
     </div>
 </div>
 @endsection

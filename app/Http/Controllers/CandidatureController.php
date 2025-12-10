@@ -33,10 +33,19 @@ class CandidatureController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $candidatures = Candidature::with('parcours')->paginate(10); // Charger la relation parcours
-        return view('candidatures.index', compact('candidatures'));
+        $status = $request->query('status', 'En attente'); // Default to 'En attente'
+        
+        $query = Candidature::with('parcours');
+
+        if ($status) {
+            $query->where('statut', $status);
+        }
+
+        $candidatures = $query->latest()->paginate(10);
+
+        return view('candidatures.index', compact('candidatures', 'status'));
     }
 
     /**
@@ -196,22 +205,6 @@ class CandidatureController extends Controller
                 // Assurez-vous que tous les champs requis pour Etudiant sont présents
             ]);
 
-            // 3. Création de l\'inscription administrative (inscriptions_admin)
-            $inscriptionAdmin = InscriptionAdmin::create([
-                'id_etudiant' => $etudiant->id,
-                'id_parcours' => $candidature->parcours_id,
-                'annee_academique' => $candidature->annee_admission ?? (date('Y').'-'.(date('Y')+1)),
-                'date_inscription' => now(),
-                'statut' => 'En attente de paiement',
-                // Transfert d\'autres informations administratives
-                'type_bourse' => $candidature->type_bourse,
-                'est_premiere_inscription' => $candidature->est_premiere_inscription,
-                'mode_paiement_prevu' => $candidature->mode_paiement_prevu,
-                'declaration_engagement_acceptee' => $candidature->declaration_engagement_acceptee,
-                'paiement_modalite' => $candidature->paiement_modalite,
-                'acceptation_conditions_inscription' => $candidature->acceptation_conditions_inscription,
-            ]);
-
             // Mettre à jour le statut de la candidature
             $candidature->statut = 'Validée';
             $candidature->save();
@@ -221,7 +214,7 @@ class CandidatureController extends Controller
             // Envoyer l\'e-mail avec les identifiants
             Mail::to($user->email)->send(new EtudiantCredentialsMail($user, $randomPassword));
 
-            return redirect()->route('inscriptions.candidatures.index')->with('success', 'Candidature validée avec succès. Un compte utilisateur, un profil étudiant et une inscription administrative ont été créés.');
+            return redirect()->route('inscriptions.candidatures.index')->with('success', 'Candidature validée avec succès. Un compte utilisateur et un profil étudiant ont été créés.');
 
         } catch (\Exception $e) {
             DB::rollBack();

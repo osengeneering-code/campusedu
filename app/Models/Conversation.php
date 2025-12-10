@@ -5,6 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+use App\Models\Message;
+use App\Models\Module;
+use App\Models\Filiere;
+use App\Models\Stage;
 
 class Conversation extends Model
 {
@@ -74,6 +79,12 @@ class Conversation extends Model
     {
         return $this->belongsTo(Filiere::class);
     }
+   public function users()
+    {
+        return $this->belongsToMany(User::class, 'conversation_user', 'conversation_id', 'user_id')
+                    ->withTimestamps();
+    }
+
 
     public function stage()
     {

@@ -25,10 +25,14 @@ class ConversationController extends Controller
         return view('conversations.index', compact('conversations'));
     }
 
-    public function create()
+    public function create(?string $recipient_id = null)
     {
         $users = $this->messagingService->getPotentialRecipients(Auth::user());
-        return view('conversations.create', compact('users'));
+        $recipient = null;
+        if ($recipient_id) {
+            $recipient = User::find($recipient_id);
+        }
+        return view('conversations.create', compact('users', 'recipient'));
     }
 
     public function store(Request $request)
