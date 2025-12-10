@@ -72,7 +72,7 @@ class PortailController extends Controller
     $etudiant = $user->load('etudiant')->etudiant;
     
     if (!$etudiant) {
-        return redirect()->route('dashboard')->with('error', 'Vous n\'avez pas de profil étudiant associé.');
+        return redirect()->route('home')->with('error', 'Vous n\'avez pas de profil étudiant associé.');
     }
     // Année académique actuelle
     $anneeAcademique = now()->year . '-' . (now()->year + 1);
