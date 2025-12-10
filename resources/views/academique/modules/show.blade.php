@@ -2,28 +2,65 @@
 
 @section('titre', 'Détails du Module')
 
+@section('header')
+<style>
+    .hero-banner {
+        height: 250px; /* Hauteur de la bannière */
+        background-size: cover;
+        background-position: center;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .hero-banner::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.4); /* Assombrir l'image pour que le texte soit lisible */
+        border-radius: 8px;
+    }
+
+    .hero-banner-content {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+    }
+
+    .hero-banner-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .hero-banner-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+    }
+</style>
+@endsection
+
 @section('content')
 <div class="container-fluid">
 
     {{-- Bannière de la filière parente --}}
     @if($module->ue->semestre->parcours->filiere && $module->ue->semestre->parcours->filiere->image_path)
-    <div class="card shadow-sm mb-4">
-        <img src="{{ $module->ue->semestre->parcours->filiere->image_path }}" class="card-img-top" alt="Bannière de {{ $module->ue->semestre->parcours->filiere->nom }}" style="max-height: 250px; object-fit: cover;">
-    </div>
-    @endif
-
-    {{-- En-tête de la page --}}
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Module : {{ $module->libelle }}</h1>
-        <div>
-            <a href="{{ route('academique.modules.edit', $module) }}" class="btn btn-warning btn-sm shadow-sm">
-                <i class="bx bx-edit"></i> Modifier
-            </a>
-            <a href="{{ route('academique.modules.index') }}" class="btn btn-secondary btn-sm shadow-sm">
-                <i class="bx bx-arrow-back"></i> Retour à la liste
-            </a>
+    <div class="hero-banner" style="background-image: url('{{ Storage::url($module->ue->semestre->parcours->filiere->image_path) }}');">
+        <div class="hero-banner-content">
+            <h1 class="hero-banner-title">{{ $module->ue->semestre->parcours->filiere->nom ?? 'Filière' }}</h1>
+            <p class="hero-banner-subtitle">Module : {{ $module->libelle }} ({{ $module->code_module }})</p>
         </div>
     </div>
+    @endif
 
     <div class="row">
         {{-- Colonne de Gauche : Informations Clés --}}
