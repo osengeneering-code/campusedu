@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Services\AcademicAverageService;
 use App\Models\Semestre;
-use App\Models\Etudiant;
-use App\Models\InscriptionAdmin; // Pour récupérer les étudiants inscrits
+use App->Models\Etudiant;
+use App\Models\InscriptionAdmin;
+use App\Models\Departement; // NOUVEAU
+use App->Models\Filiere;    // NOUVEAU
+use App\Models\Parcours;   // NOUVEAU
 
 class BulletinSemestrielController extends Controller
 {
@@ -20,12 +23,49 @@ class BulletinSemestrielController extends Controller
     /**
      * Affiche la liste des semestres pour la sélection des bulletins.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $semestres = Semestre::with('ues')->get(); // Récupérer tous les semestres avec leurs UEs
-        $anneeAcademique = date('Y') . '-' . (date('Y') + 1); // Année académique actuelle par défaut
+        $anneeAcademique = $request->input('annee_academique', date('Y') . '-' . (date('Y') + 1));
+        $semestreId = $request->input('semestre_id');
+        $departementId = $request->input('departement_id');
+        $filiereId = $request->input('filiere_id');
+        $parcoursId = $request->input('parcours_id');
 
-        return view('academique.bulletins.semestriel.index', compact('semestres', 'anneeAcademique'));
+        $semestres = Semestre::all();
+        $departements = Departement::all();
+        $filieres = collect(); // Initialiser comme collection vide
+        $parcours = collect(); // Initialiser comme collection vide
+
+        if ($departementId) {
+            $filieres = Filiere::where('id_departement', $departementId)->get();
+        }
+        if ($filiereId) {
+            $parcours = Parcours::where('id_filiere', $filiereId)->get();
+        }
+        
+        $etudiants = collect();
+        if ($semestreId && $anneeAcademique && $parcoursId) {
+            $etudiants = Etudiant::whereHas('inscriptionAdmins', function ($query) use ($semestreId, $anneeAcademique, $parcoursId) {
+                $query->where('annee_academique', $anneeAcademique)
+                      ->where('id_parcours', $parcoursId)
+                      ->whereHas('parcours.semestres', function ($q) use ($semestreId) {
+                          $q->where('semestres.id', $semestreId);
+                      });
+            })->with('inscriptionAdmins')->get(); // Charger la relation pour l'affichage
+        }
+        
+        return view('academique.bulletins.semestriel.index', compact(
+            'semestres',
+            'departements',
+            'filieres',
+            'parcours',
+            'etudiants',
+            'anneeAcademique',
+            'semestreId',
+            'departementId',
+            'filiereId',
+            'parcoursId'
+        ));
     }
 
     /**
