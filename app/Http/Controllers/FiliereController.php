@@ -44,7 +44,7 @@ class FiliereController extends Controller
             $data = $request->only(['nom', 'id_departement', 'description']);
 
             if ($request->hasFile('image_path')) {
-                $path = $request->file('image_path')->store('public/filiere_banners');
+                $path = $request->file('image_path')->store('filiere_banners', 'public');
                 $data['image_path'] = Storage::url($path);
             }
 
@@ -91,7 +91,7 @@ class FiliereController extends Controller
                     Storage::delete(str_replace('/storage', 'public', $filiere->image_path));
                 }
 
-                $path = $request->file('image_path')->store('public/filiere_banners');
+                $path = $request->file('image_path')->store('filiere_banners', 'public');
                 $data['image_path'] = Storage::url($path);
             }
 
