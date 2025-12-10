@@ -14,6 +14,7 @@ class Ue extends Model
         'code_ue',
         'libelle',
         'credits_ects',
+        'coefficient',
     ];
 
     public function semestre()

@@ -183,4 +183,5 @@ Route::group(['middleware' => ['auth', 'role:etudiant'], 'prefix' => 'etudiant',
     Route::post('stage/{stage}/submit-report', [\App\Http\Controllers\StageController::class, 'submitReport'])->name('stage.submit_report');
     Route::get('emploi-du-temps', [\App\Http\Controllers\EtudiantPortailController::class, 'emploi_du_temps'])->name('emploi_du_temps');
     Route::get('paiements', [\App\Http\Controllers\PaiementController::class, 'index'])->name('paiements');
+    Route::get('semestres/{anneeAcademique}/{semestreId}/resultats', [\App\Http\Controllers\EtudiantPortailController::class, 'semestreResultats'])->name('semestre-resultats');
 });
