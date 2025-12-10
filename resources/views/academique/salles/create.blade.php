@@ -31,7 +31,14 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label" for="type_salle">Type de Salle</label>
-                    <input type="text" class="form-control @error('type_salle') is-invalid @enderror" id="type_salle" name="type_salle" value="{{ old('type_salle') }}" placeholder="Ex: Salle de cours, Laboratoire" />
+                    <select class="form-select @error('type_salle') is-invalid @enderror" id="type_salle" name="type_salle">
+                        <option value="">Sélectionner un type</option>
+                        <option value="Salle de cours" {{ old('type_salle') == 'Salle de cours' ? 'selected' : '' }}>Salle de cours</option>
+                        <option value="Laboratoire" {{ old('type_salle') == 'Laboratoire' ? 'selected' : '' }}>Laboratoire</option>
+                        <option value="Amphithéâtre" {{ old('type_salle') == 'Amphithéâtre' ? 'selected' : '' }}>Amphithéâtre</option>
+                        <option value="Salle de réunion" {{ old('type_salle') == 'Salle de réunion' ? 'selected' : '' }}>Salle de réunion</option>
+                        <option value="Bureau" {{ old('type_salle') == 'Bureau' ? 'selected' : '' }}>Bureau</option>
+                    </select>
                     @error('type_salle')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
